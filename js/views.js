@@ -1,7 +1,7 @@
 /* Router and views */
 (function () {
   var $ = NX.$, $$ = NX.$$, esc = NX.esc, V = $('#view');
-  var ROUTES = [['home', 'Home'], ['learn', 'Learn'], ['labs', 'Labs'], ['practice', 'Practice'], ['cards', 'Cards'], ['cases', 'Cases'], ['mock', 'Mock test'], ['mistakes', 'Mistakes'], ['formulas', 'Formulas'], ['visuals', 'Visuals'], ['sync', 'Sync']];
+  var ROUTES = [['home', 'Home'], ['learn', 'Learn'], ['labs', 'Playground'], ['practice', 'Practice'], ['cards', 'Cards'], ['cases', 'Cases'], ['mock', 'Mock test'], ['mistakes', 'Mistakes'], ['formulas', 'Formulas'], ['visuals', 'Visuals'], ['sync', 'Sync']];
   NX.pref = {};
   function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
   function btn(txt, cls, fn) { var b = el('button', 'btn ' + (cls || ''), txt); b.onclick = fn; return b; }
@@ -17,6 +17,7 @@
     var h = (location.hash || '#home').slice(1), p = h.split('-'), name = p[0], arg = p.slice(1).join('-');
     if (!VIEWS[name]) name = 'home';
     renderNav(name); V.innerHTML = '';
+    V.style.removeProperty('--accent'); V.style.removeProperty('--accent-soft'); document.body.classList.remove('rd');
     try { VIEWS[name](arg); } catch (e) { V.innerHTML = '<div class="trap">Something went wrong in this view: ' + esc(e.message) + '</div>'; if (window.console) console.error(e); }
     window.scrollTo(0, 0);
   }
@@ -76,20 +77,32 @@
       V.innerHTML = h + '</div>'; return;
     }
     var c = NX.chapters[id - 1]; if (!c) { location.hash = '#learn'; return; }
-    var labs = NX.labs.filter(function (l) { return l.ch === id; }), drills = NX.drills.filter(function (d) { return d.ch === id; });
-    var h2 = '<div class="crumb"><a href="#learn">Learn</a> / Chapter ' + id + '</div><h1>' + esc(c.title) + '</h1><div class="row" style="margin-bottom:10px"><span class="pill acc">' + NX.MARKS[id] + ' marks</span><span class="pill">' + c.q.length + ' questions</span><span class="pill">' + c.fc.length + ' flashcards</span>' + (NX.visuals.some(function (v) { return v.ch === id; }) ? '<a class="pill acc" style="text-decoration:none" href="#visuals-' + id + '">Visuals</a>' : '') + (NX.formulas.some(function (f) { return f.ch === id; }) ? '<a class="pill acc" style="text-decoration:none" href="#formulas-' + id + '">Formulas</a>' : '') + '</div>';
-    h2 += '<div class="card" style="margin-bottom:12px"><h3>You should be able to</h3><ul style="margin:0;padding-left:1.1em">' + c.obj.map(function (o) { return '<li>' + esc(o) + '</li>'; }).join('') + '</ul></div><div id="secs"></div>';
-    h2 += '<div class="card"><h3>Now apply it</h3><div class="row"><button class="btn pri" id="pq">Practise this chapter</button><button class="btn" id="fc">Flashcards</button>' + labs.map(function (l) { return '<a class="btn" style="text-decoration:none" href="#labs-' + l.id + '">Lab: ' + esc(l.title) + '</a>'; }).join('') + (drills.length ? '<button class="btn" id="dr">Numerical drills</button>' : '') + '</div></div><div class="row" style="margin-top:14px">' + (id > 1 ? '<a class="btn" style="text-decoration:none" href="#learn-' + (id - 1) + '">Previous chapter</a>' : '') + '<span class="sp"></span>' + (id < 15 ? '<a class="btn" style="text-decoration:none" href="#learn-' + (id + 1) + '">Next chapter</a>' : '') + '</div>';
+    var labs = NX.labs.filter(function (l) { return l.ch === id; }), drills = NX.drills.filter(function (d) { return d.ch === id; }), vis = NX.visuals.filter(function (v) { return v.ch === id; });
+    var col = NX.chColor(id); V.style.setProperty('--accent', col); V.style.setProperty('--accent-soft', 'color-mix(in srgb,' + col + ' 13%,transparent)');
+    var h2 = '<div class="crumb"><a href="#learn">Learn</a> / Chapter ' + id + '</div><div class="chhero" style="--cc:' + col + '"><span class="cn">' + id + '</span><div><h1 style="margin:0">' + esc(c.title) + '</h1><div class="row" style="margin-top:8px"><span class="pill acc">' + NX.MARKS[id] + ' marks</span><span class="pill">' + c.q.length + ' questions</span><span class="pill">' + c.fc.length + ' flashcards</span>' + (NX.formulas.some(function (f) { return f.ch === id; }) ? '<a class="pill acc" style="text-decoration:none" href="#formulas-' + id + '">Formulas</a>' : '') + '<span class="sp"></span><button class="btn sm" id="xa">Collapse all</button></div></div></div>';
+    h2 += '<div class="readgrid"><div class="readmain"><div class="card" style="margin-bottom:12px"><h3>You should be able to</h3><ul style="margin:0;padding-left:1.1em">' + c.obj.map(function (o) { return '<li>' + esc(o) + '</li>'; }).join('') + '</ul></div><div id="secs"></div>';
+    if (labs.length || vis.length) h2 += '<h2 id="sec-try" class="trysec">Try it yourself</h2><p class="sub">Change the inputs and watch the answer move. This is how the formulas and charts above turn into intuition.</p><div id="tryit"></div>';
+    h2 += '<div class="card" style="margin-top:16px"><h3>Now apply it</h3><div class="row"><button class="btn pri" id="pq">Practise this chapter</button><button class="btn" id="fc">Flashcards</button><a class="btn" style="text-decoration:none" href="#cases">Case studies</a>' + (drills.length ? '<button class="btn" id="dr">Numerical drills</button>' : '') + '</div></div><div class="row" style="margin-top:14px">' + (id > 1 ? '<a class="btn" style="text-decoration:none" href="#learn-' + (id - 1) + '">Previous chapter</a>' : '') + '<span class="sp"></span>' + (id < 15 ? '<a class="btn" style="text-decoration:none" href="#learn-' + (id + 1) + '">Next chapter</a>' : '') + '</div></div><aside class="toc" id="toc"></aside></div>';
     V.innerHTML = h2;
-    var box = $('#secs');
+    var box = $('#secs'), tocs = [];
     c.sections.forEach(function (s, i) {
-      var key = 's' + id + '-' + i, d = el('details', 'sec');
-      function sum() { d.querySelector('summary').innerHTML = (s.deep ? '<span class="pill acc">Deep dive</span> ' : '<span class="pill">Quick review</span> ') + esc(s.t.replace(/^Deep dive: /, '').replace(/^./, function (c) { return c.toUpperCase(); })) + (NX.S.read[key] ? ' <span class="pill good" style="margin-left:auto">read</span>' : ''); }
+      var key = 's' + id + '-' + i, d = el('details', 'sec'), nm = s.t.replace(/^Deep dive: /, '').replace(/^./, function (c) { return c.toUpperCase(); });
+      d.id = 'sec-' + i; d.open = true; tocs.push([d.id, nm, s.deep]);
+      function sum() { d.querySelector('summary').innerHTML = '<span class="num">' + (i + 1) + '</span><span class="tt">' + esc(nm) + '</span>' + (s.deep ? '<span class="pill acc">Deep dive</span>' : '<span class="pill">Quick review</span>') + (NX.S.read[key] ? '<span class="pill good">read</span>' : ''); }
       d.innerHTML = '<summary></summary><div class="body">' + s.h + '</div>'; sum();
       var b = btn(NX.S.read[key] ? 'Mark as unread' : 'Mark as read', 'sm', function () { NX.S.read[key] = NX.S.read[key] ? 0 : 1; if (!NX.S.read[key]) delete NX.S.read[key]; NX.save(); b.textContent = NX.S.read[key] ? 'Mark as unread' : 'Mark as read'; sum(); });
       d.querySelector('.body').appendChild(b); box.appendChild(d);
     });
-    var first = box.querySelector('details'); if (first) first.open = true;
+    if (labs.length || vis.length) tocs.push(['sec-try', 'Try it yourself', 0]);
+    var ti = $('#tryit');
+    if (ti) { vis.forEach(function (v) { var w = el('div', 'card tryc'); w.innerHTML = '<h3>' + esc(v.title) + '</h3><p class="sub" style="margin:0 0 8px">' + esc(v.desc || '') + '</p>'; var bx = el('div', ''); w.appendChild(bx); ti.appendChild(w); try { v.render(bx); } catch (e) { bx.textContent = 'Visual unavailable'; } });
+      labs.forEach(function (l) { var w = el('div', 'card tryc'); w.innerHTML = '<h3>' + esc(l.title) + '</h3><p class="sub" style="margin:0 0 8px">' + esc(l.blurb) + '</p>'; var bx = el('div', ''); w.appendChild(bx); ti.appendChild(w); try { l.render(bx); } catch (e) { bx.textContent = 'Lab unavailable'; } }); }
+    $('#toc').innerHTML = '<b>On this page</b>' + tocs.map(function (t) { return '<a href="#" data-t="' + t[0] + '"><i></i>' + esc(t[1]) + '</a>'; }).join('');
+    var links = Array.prototype.slice.call(document.querySelectorAll('#toc a'));
+    links.forEach(function (a) { a.onclick = function (e) { e.preventDefault(); var t = document.getElementById(a.getAttribute('data-t')); if (t) { if (t.tagName === 'DETAILS') t.open = true; window.scrollTo({ top: t.getBoundingClientRect().top + window.scrollY - 70, behavior: 'smooth' }); } }; });
+    function spy() { var cur = 0; tocs.forEach(function (t, i) { var n = document.getElementById(t[0]); if (n && n.getBoundingClientRect().top < 140) cur = i; }); links.forEach(function (a, i) { a.classList.toggle('on', i === cur); }); }
+    window.onscroll = spy; spy();
+    var all = true; $('#xa').onclick = function () { all = !all; Array.prototype.forEach.call(document.querySelectorAll('details.sec'), function (d) { d.open = all; }); this.textContent = all ? 'Collapse all' : 'Expand all'; };
     $('#pq').onclick = function () { NX.pref = { ch: id }; location.hash = '#practice'; };
     $('#fc').onclick = function () { NX.pref = { ch: id }; location.hash = '#cards'; };
     var dr = $('#dr'); if (dr) dr.onclick = function () { NX.pref = { tab: 'drills' }; location.hash = '#practice'; };
@@ -99,7 +112,7 @@
   VIEWS.labs = function (arg) {
     var lab = NX.labs.filter(function (l) { return l.id === arg; })[0];
     if (!lab) {
-      var h = '<h1>Labs</h1><p class="sub">Change the inputs, watch the outputs move. These are the fastest way to build intuition for the numerical chapters.</p><div class="grid g3">';
+      var h = '<h1>Playground</h1><p class="sub">Every lab here also appears inside its chapter under "Try it yourself", so you never have to come here. This page is just a shortcut list. A lab lets you change inputs (a discount rate, a coupon, a ratio) and watch the answer move, which is how a formula stops being something to memorise.</p><div class="grid g3">';
       NX.labs.forEach(function (l) { h += '<a class="card link" href="#labs-' + l.id + '"><span class="pill acc">Chapter ' + l.ch + '</span><h3 style="margin:8px 0 4px">' + esc(l.title) + '</h3><p class="sub" style="margin:0">' + esc(l.blurb) + '</p></a>'; });
       V.innerHTML = h + '</div>'; return;
     }
@@ -207,7 +220,7 @@
     var items = []; for (i = 1; i <= 15; i++) NX.shuffle(by[i]).slice(0, n[i]).forEach(function (q) { items.push({ id: q.id, ch: q.ch, q: q.q, o: q.o, a: q.a, e: q.e }); });
     items = NX.shuffle(items);
     var cs = NX.shuffle(NX.cases.map(function (_, i) { return i; })).slice(0, 5);
-    cs.forEach(function (ci) { NX.cases[ci].qs.forEach(function (q, j) { items.push({ id: 'case' + (ci + 1) + '-' + j, ch: 0, cs: ci, q: q.q, o: q.o, a: q.a, e: q.e }); }); });
+    cs.forEach(function (ci) { NX.shuffle(NX.cases[ci].qs.map(function (_, j) { return j; })).slice(0, 4).sort().forEach(function (j) { var q = NX.cases[ci].qs[j]; items.push({ id: 'case' + (ci + 1) + '-' + j, ch: 0, cs: ci, q: q.q, o: q.o, a: q.a, e: q.e }); }); });
     items.forEach(function (it) { var ord = NX.shuffle(it.o.map(function (_, i) { return i; })); it.ord = ord; });
     return { items: items, picks: items.map(function () { return -1; }), flags: items.map(function () { return 0; }), cur: 0, end: Date.now() + MOCK_MIN * 60000, done: false, times: items.map(function () { return 0; }), t0: null, last: 0, start: Date.now() };
   }

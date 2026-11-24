@@ -159,4 +159,5 @@ add('triangle', 15, 'Triangle breakout and profit target', 'Target equals the tr
     return SVG(700, 225, s, 'Triangle breakout') + '<p class="sub">Ascending triangle: higher lows against flat resistance, a bullish continuation. A downside break would give a target of ' + (v[1] - v[0]) + '. Volume should rise on the breakout.</p>';
   });
 });
+NX.vh = { add: add, ctrls: ctrls, T: T, R: R, SVG: SVG };
 })();
