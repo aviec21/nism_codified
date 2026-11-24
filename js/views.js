@@ -1,7 +1,7 @@
 /* Router and views */
 (function () {
   var $ = NX.$, $$ = NX.$$, esc = NX.esc, V = $('#view');
-  var ROUTES = [['home', 'Home'], ['learn', 'Learn'], ['labs', 'Labs'], ['practice', 'Practice'], ['cards', 'Cards'], ['cases', 'Cases'], ['mock', 'Mock test'], ['sync', 'Sync']];
+  var ROUTES = [['home', 'Home'], ['learn', 'Learn'], ['labs', 'Labs'], ['practice', 'Practice'], ['cards', 'Cards'], ['cases', 'Cases'], ['mock', 'Mock test'], ['mistakes', 'Mistakes'], ['formulas', 'Formulas'], ['visuals', 'Visuals'], ['sync', 'Sync']];
   NX.pref = {};
   function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
   function btn(txt, cls, fn) { var b = el('button', 'btn ' + (cls || ''), txt); b.onclick = fn; return b; }
@@ -63,7 +63,7 @@
     }
     var c = NX.chapters[id - 1]; if (!c) { location.hash = '#learn'; return; }
     var labs = NX.labs.filter(function (l) { return l.ch === id; }), drills = NX.drills.filter(function (d) { return d.ch === id; });
-    var h2 = '<div class="crumb"><a href="#learn">Learn</a> / Chapter ' + id + '</div><h1>' + esc(c.title) + '</h1><div class="row" style="margin-bottom:10px"><span class="pill acc">' + NX.MARKS[id] + ' marks</span><span class="pill">' + c.q.length + ' questions</span><span class="pill">' + c.fc.length + ' flashcards</span></div>';
+    var h2 = '<div class="crumb"><a href="#learn">Learn</a> / Chapter ' + id + '</div><h1>' + esc(c.title) + '</h1><div class="row" style="margin-bottom:10px"><span class="pill acc">' + NX.MARKS[id] + ' marks</span><span class="pill">' + c.q.length + ' questions</span><span class="pill">' + c.fc.length + ' flashcards</span>' + (NX.visuals.some(function (v) { return v.ch === id; }) ? '<a class="pill acc" style="text-decoration:none" href="#visuals-' + id + '">Visuals</a>' : '') + (NX.formulas.some(function (f) { return f.ch === id; }) ? '<a class="pill acc" style="text-decoration:none" href="#formulas-' + id + '">Formulas</a>' : '') + '</div>';
     h2 += '<div class="card" style="margin-bottom:12px"><h3>You should be able to</h3><ul style="margin:0;padding-left:1.1em">' + c.obj.map(function (o) { return '<li>' + esc(o) + '</li>'; }).join('') + '</ul></div><div id="secs"></div>';
     h2 += '<div class="card"><h3>Now apply it</h3><div class="row"><button class="btn pri" id="pq">Practise this chapter</button><button class="btn" id="fc">Flashcards</button>' + labs.map(function (l) { return '<a class="btn" style="text-decoration:none" href="#labs-' + l.id + '">Lab: ' + esc(l.title) + '</a>'; }).join('') + (drills.length ? '<button class="btn" id="dr">Numerical drills</button>' : '') + '</div></div><div class="row" style="margin-top:14px">' + (id > 1 ? '<a class="btn" style="text-decoration:none" href="#learn-' + (id - 1) + '">Previous chapter</a>' : '') + '<span class="sp"></span>' + (id < 15 ? '<a class="btn" style="text-decoration:none" href="#learn-' + (id + 1) + '">Next chapter</a>' : '') + '</div>';
     V.innerHTML = h2;
@@ -195,17 +195,18 @@
     var cs = NX.shuffle(NX.cases.map(function (_, i) { return i; })).slice(0, 5);
     cs.forEach(function (ci) { NX.cases[ci].qs.forEach(function (q, j) { items.push({ id: 'case' + (ci + 1) + '-' + j, ch: 0, cs: ci, q: q.q, o: q.o, a: q.a, e: q.e }); }); });
     items.forEach(function (it) { var ord = NX.shuffle(it.o.map(function (_, i) { return i; })); it.ord = ord; });
-    return { items: items, picks: items.map(function () { return -1; }), flags: items.map(function () { return 0; }), cur: 0, end: Date.now() + MOCK_MIN * 60000, done: false };
+    return { items: items, picks: items.map(function () { return -1; }), flags: items.map(function () { return 0; }), cur: 0, end: Date.now() + MOCK_MIN * 60000, done: false, times: items.map(function () { return 0; }), t0: null, last: 0, start: Date.now() };
   }
   VIEWS.mock = function () {
     var M = NX.mock;
     if (!M || M.done) {
       var hist = NX.S.mocks.slice(-5).reverse();
-      V.innerHTML = '<h1>Mock test</h1><div class="card"><ul style="margin:0 0 12px;padding-left:1.1em"><li>' + '100 questions: 80 MCQs weighted by chapter marks plus 5 cases (20 questions)</li><li>120 minutes, wrong answers cost 0.25 mark, pass mark 60</li><li>Do not refresh during a test: the attempt is kept only in this tab</li></ul><button class="btn pri" id="st">Start the test</button></div>' + (hist.length ? '<h2 style="margin-top:18px">Recent attempts</h2><div class="tw"><table><tr><th>Date</th><th class="n">Score</th><th class="n">Right</th><th class="n">Wrong</th><th>Result</th></tr>' + hist.map(function (m) { return '<tr><td>' + new Date(m.t).toLocaleDateString('en-IN') + '</td><td class="n">' + m.s.toFixed(2) + '/' + m.max + '</td><td class="n">' + m.c + '</td><td class="n">' + m.w + '</td><td>' + (m.s >= 60 ? '<span class="pill good">Pass</span>' : '<span class="pill bad">Below 60</span>') + '</td></tr>'; }).join('') + '</table></div>' : '');
+      V.innerHTML = '<h1>Mock test</h1><div class="card"><ul style="margin:0 0 12px;padding-left:1.1em"><li>' + '100 questions: 80 MCQs weighted by chapter marks plus 5 cases (20 questions)</li><li>120 minutes, wrong answers cost 0.25 mark, pass mark 60</li><li>Do not refresh during a test: the attempt is kept only in this tab</li></ul><button class="btn pri" id="st">Start the test</button></div>' + (hist.length ? '<h2 style="margin-top:18px">Recent attempts</h2><div class="tw"><table><tr><th>Date</th><th class="n">Score</th><th class="n">Right</th><th class="n">Wrong</th><th>Result</th></tr>' + hist.map(function (m) { return '<tr><td>' + new Date(m.t).toLocaleDateString('en-IN') + '</td><td class="n">' + m.s.toFixed(2) + '/' + m.max + '</td><td class="n">' + m.c + '</td><td class="n">' + m.w + '</td><td>' + (m.s >= 60 ? '<span class="pill good">Pass</span>' : '<span class="pill bad">Below 60</span>') + '</td></tr>'; }).join('') + '</table></div>' + NX.mockTrend() : '');
       $('#st').onclick = function () { NX.mock = buildMock(); VIEWS.mock(); };
       return;
     }
     function render() {
+      var now = Date.now(); if (M.t0 != null) M.times[M.last] += now - M.t0; M.last = M.cur; M.t0 = now;
       var it = M.items[M.cur], i = M.cur, ans = M.picks.filter(function (p) { return p >= 0; }).length;
       var h = '<div class="row" style="margin-bottom:8px"><span class="pill acc">Question ' + (i + 1) + ' / ' + M.items.length + '</span>' + (it.cs != null ? '<span class="pill warn">Case ' + (it.cs + 1) + '</span>' : '') + '<span class="sp"></span><span class="pill">' + ans + ' answered</span><span class="timer" id="tm" aria-label="Time left"></span></div>';
       h += '<div class="card">' + (it.cs != null ? '<details class="sec" open><summary>' + esc(NX.cases[it.cs].title) + ' (read the facts)</summary><div class="body">' + NX.cases[it.cs].stem + '</div></details>' : '') + '<div class="qtext">' + it.q + '</div><div id="mo"></div></div>';
@@ -221,10 +222,18 @@
     }
     function tick() { var t = $('#tm'); if (!t) return; var s = Math.max(0, Math.round((M.end - Date.now()) / 1000)); t.textContent = Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); t.style.color = s < 600 ? 'var(--bad)' : ''; if (s <= 0) finish(); }
     function finish() {
-      clearTimers(); M.done = true; var c = 0, w = 0, u = 0, by = {}, cs = { n: 0, c: 0 };
+      clearTimers(); if (M.t0 != null) { M.times[M.last] += Date.now() - M.t0; M.t0 = null; } M.done = true; var c = 0, w = 0, u = 0, by = {}, cs = { n: 0, c: 0 };
       M.items.forEach(function (it, i) { var p = M.picks[i]; if (p < 0) { u++; return; } var ok = p === it.a; if (ok) c++; else w++; NX.record(it.id, ok); var k = it.ch || 0; if (!by[k]) by[k] = { n: 0, c: 0, w: 0 }; by[k].n++; if (ok) by[k].c++; else by[k].w++; });
-      var score = c - NEG * w; NX.S.mocks.push({ t: Date.now(), s: score, max: M.items.length, c: c, w: w, u: u }); NX.save();
+      var score = c - NEG * w; NX.S.mocks.push({ t: Date.now(), s: score, max: M.items.length, c: c, w: w, u: u, used: Math.round(M.times.reduce(function (x, y) { return x + y; }, 0) / 60000) }); NX.save();
       var h = '<h1>Result</h1><div class="grid g4"><div class="card"><div class="stat"><b style="color:var(--' + (score >= 60 ? 'good' : 'bad') + ')">' + score.toFixed(2) + '</b><span>Score out of ' + M.items.length + (score >= 60 ? ' (pass)' : ' (below pass mark 60)') + '</span></div></div><div class="card"><div class="stat"><b>' + c + '</b><span>Correct</span></div></div><div class="card"><div class="stat"><b>' + w + '</b><span>Wrong (-' + (w * NEG).toFixed(2) + ')</span></div></div><div class="card"><div class="stat"><b>' + u + '</b><span>Unanswered</span></div></div></div>';
+      var tt = M.times.reduce(function (x, y) { return x + y; }, 0) / 1000, tans = M.items.filter(function (_, i) { return M.picks[i] >= 0; }).length, avg = tans ? tt / tans : 0;
+      var ord = M.items.map(function (it, i) { return { i: i, t: M.times[i] / 1000, ok: M.picks[i] === it.a, sk: M.picks[i] < 0 }; });
+      var slow = ord.filter(function (x) { return !x.sk; }).sort(function (a, b) { return b.t - a.t; }).slice(0, 5);
+      var fastWrong = ord.filter(function (x) { return !x.sk && !x.ok && x.t < 20; }).length;
+      var okT = ord.filter(function (x) { return x.ok; }), woT = ord.filter(function (x) { return !x.sk && !x.ok; });
+      var mean = function (a) { return a.length ? a.reduce(function (x, y) { return x + y.t; }, 0) / a.length : 0; };
+      h += '<h2 style="margin-top:18px">Time analysis</h2><div class="grid g4"><div class="card"><div class="stat"><b>' + Math.round(tt / 60) + ' min</b><span>Time spent of ' + MOCK_MIN + '</span></div></div><div class="card"><div class="stat"><b>' + Math.round(avg) + ' s</b><span>Average per answered question (budget ' + Math.round(MOCK_MIN * 60 / M.items.length) + ' s)</span></div></div><div class="card"><div class="stat"><b>' + Math.round(mean(okT)) + ' s / ' + Math.round(mean(woT)) + ' s</b><span>Avg on right / wrong answers</span></div></div><div class="card"><div class="stat"><b>' + fastWrong + '</b><span>Wrong in under 20 s (rushed)</span></div></div></div>';
+      h += '<p class="sub" style="margin-top:8px">Slowest questions: ' + slow.map(function (x) { return '#' + (x.i + 1) + ' (' + Math.round(x.t) + ' s, ' + (x.ok ? 'right' : 'wrong') + ')'; }).join(', ') + '.</p>' + NX.mockTrend();
       h += '<h2 style="margin-top:18px">By chapter</h2><div class="tw"><table><tr><th>Chapter</th><th class="n">Marks</th><th class="n">Right / attempted</th><th>Accuracy</th></tr>';
       Object.keys(by).sort(function (a, b) { return a - b; }).forEach(function (k) { var x = by[k], acc = x.c / x.n; h += '<tr><td>' + (+k ? '<a href="#learn-' + k + '">' + k + '. ' + esc(NX.chapters[k - 1].title) + '</a>' : 'Case studies') + '</td><td class="n">' + (+k ? NX.MARKS[k] : 20) + '</td><td class="n">' + x.c + ' / ' + x.n + '</td><td style="min-width:120px">' + bar(acc, acc >= .75 ? 'g' : acc >= .5 ? 'w' : 'b') + '</td></tr>'; });
       h += '</table></div><h2 style="margin-top:18px">Review wrong and skipped answers</h2>';
@@ -251,5 +260,6 @@
     $('#rs').onclick = function () { if (confirm('Erase all progress on this device? Synced copies on the server are not touched until you sync again.')) { NX.S = { ans: {}, fc: {}, read: {}, mocks: [], streak: { d: '', n: 0 } }; NX.save(); NX.toast('Reset'); } };
   };
 
+  Object.keys(NX.extraViews || {}).forEach(function (k) { VIEWS[k] = function (a) { NX.extraViews[k](V, a); }; });
   route();
 })();

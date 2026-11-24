@@ -118,3 +118,7 @@ svg text{fill:var(--muted);font:11px var(--mono)}
 @media (max-width:560px){h1{font-size:1.4rem}.top{gap:8px}nav a{padding:6px 9px;font-size:.88rem}}
 
 .card h1:first-child,.card h2:first-child,.card h3:first-child{margin-top:0}
+svg.dg text{font:12px var(--font);fill:var(--ink)}
+.vout{margin-top:6px}
+.card.link{transition:border-color .15s,transform .15s}.card.link:hover{transform:translateY(-1px)}
+svg.chart.dg{max-width:1000px}
