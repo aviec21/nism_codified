@@ -122,3 +122,9 @@ svg.dg text{font:12px var(--font);fill:var(--ink)}
 .vout{margin-top:6px}
 .card.link{transition:border-color .15s,transform .15s}.card.link:hover{transform:translateY(-1px)}
 svg.chart.dg{max-width:1000px}
+
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}.seg button{background:var(--surface);border:0;padding:7px 12px;font:inherit;font-size:.85rem;color:inherit;cursor:pointer}.seg button.on{background:var(--accent);color:#fff}
+.exmap{display:flex;gap:3px;height:74px;margin-top:12px}.exmap a{position:relative;flex-basis:0;min-width:0;border-radius:8px;overflow:hidden;background:color-mix(in srgb,var(--cc) 14%,transparent);text-decoration:none;display:flex;align-items:flex-start;justify-content:center}.exmap a i{position:absolute;left:0;right:0;bottom:0;background:var(--cc);opacity:.9}.exmap a b{position:relative;color:var(--ink);font-size:.78rem;margin-top:4px}.exmap a:hover{outline:2px solid var(--cc)}
+.exlegend{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:.76rem;color:var(--muted,#6b7785);margin-top:5px}
+.ct{border-left:5px solid var(--cc);text-decoration:none;color:inherit;display:block}.ct:hover{box-shadow:0 6px 20px rgba(0,0,0,.08)}.ct h3{margin:8px 0 6px;font-size:1rem}.ct .cn{background:var(--cc);color:#fff;border-radius:8px;min-width:28px;text-align:center;padding:2px 8px;font-weight:600}.ct .mk b{font-size:1.5rem;color:var(--cc)}
+.mm{display:grid;grid-template-columns:62px 1fr 48px;gap:8px;align-items:center;font-size:.76rem;color:var(--muted,#6b7785);margin-top:3px}.mm i{height:6px;border-radius:4px;background:color-mix(in srgb,var(--cc) 16%,transparent);overflow:hidden;display:block}.mm u{display:block;height:100%;background:var(--cc);text-decoration:none}.mm em{font-style:normal;text-align:right;font-family:var(--mono,monospace)}

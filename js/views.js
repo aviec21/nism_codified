@@ -37,8 +37,21 @@
       '<div class="card"><div class="stat"><b>' + (tc + tw ? Math.round(100 * tc / (tc + tw)) + '%' : 'n/a') + '</b><span>Lifetime accuracy (' + (tc + tw) + ' answers)</span></div></div>' +
       '<div class="card"><div class="stat"><b>' + (NX.S.streak.n || 0) + '</b><span>Day streak</span></div></div></div>';
     h += '<div class="card" style="margin-bottom:14px"><h2>Do this next</h2><p>Biggest marks gap right now: <b>Chapter ' + next.c.id + ', ' + esc(next.c.title) + '</b> (' + next.m + ' marks, ' + (next.s.acc == null ? 'not started' : 'accuracy ' + NX.pct(next.s.acc, 0)) + ').</p><div class="row"><a class="btn pri" href="#learn-' + next.c.id + '" style="text-decoration:none">Open chapter</a><a class="btn" href="#practice" id="hp" style="text-decoration:none">Practise it</a><a class="btn" href="#mock" style="text-decoration:none">Take a mock' + (lastMock ? ' (last ' + Math.round(lastMock.s) + '/' + lastMock.max + ')' : '') + '</a></div></div>';
-    h += '<h2>Weightage and progress by chapter</h2><p class="sub">Bar length shows exam marks. Colour shows your accuracy on questions you have seen.</p><div class="card chl" style="padding:8px 22px">';
-    rows.forEach(function (x) { var cls = x.s.acc == null ? '' : x.s.acc >= .75 ? 'g' : x.s.acc >= .5 ? 'w' : 'b'; h += '<a href="#learn-' + x.c.id + '" style="display:grid;grid-template-columns:minmax(0,1.6fr) 54px minmax(60px,1fr) 70px;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);text-decoration:none;color:inherit"><span>' + x.c.id + '. ' + esc(x.c.title) + '</span><span class="mono sub">' + x.m + ' mk</span><span>' + bar(x.m / 15, cls) + '</span><span class="mono sub" style="text-align:right">' + (x.s.acc == null ? 'new' : NX.pct(x.s.acc, 0)) + '</span></a>'; });
+    var order = (NX.S.homeSort === 'syl') ? 'syl' : 'pri';
+    h += '<div class="row" style="align-items:end;margin-top:6px"><div><h2 style="margin:0">Where your marks are</h2><p class="sub" style="margin:2px 0 0">Each block below is one chapter, sized by exam marks. Faded means not yet secured. Tiles are ranked by marks you could still win.</p></div><span class="sp"></span><div class="seg" id="hs"><button data-o="pri" class="' + (order === 'pri' ? 'on' : '') + '">Priority</button><button data-o="syl" class="' + (order === 'syl' ? 'on' : '') + '">Syllabus order</button></div></div>';
+    h += '<div class="exmap">' + rows.map(function (x) { var sec = x.s.acc == null ? 0 : x.s.acc * Math.min(1, 0.4 + x.s.cover); return '<a href="#learn-' + x.c.id + '" title="Ch ' + x.c.id + ' ' + esc(x.c.title) + ': ' + x.m + ' marks" style="flex:' + x.m + ';--cc:' + NX.chColor(x.c.id) + '"><i style="height:' + Math.round(sec * 100) + '%"></i><b>' + x.c.id + '</b></a>'; }).join('') + '</div><div class="exlegend"><span>Block width = marks (total ' + rows.reduce(function (a, x) { return a + x.m; }, 0) + ')</span><span>Filled height = how much you have secured</span></div>';
+    var list = rows.slice(); if (order === 'pri') list.sort(function (a, b) { return b.gap - a.gap; });
+    h += '<div class="grid g3 chtiles" style="margin-top:12px">';
+    list.forEach(function (x, i) {
+      var st = x.s.acc == null ? ['Not started', ''] : x.s.acc >= .75 ? ['Strong', 'good'] : x.s.acc >= .5 ? ['Improving', 'warn'] : ['Weak', 'bad'];
+      var sec = x.m - x.gap, rd = x.s.secs ? x.s.read / x.s.secs : 0;
+      h += '<a class="card ct" href="#learn-' + x.c.id + '" style="--cc:' + NX.chColor(x.c.id) + '"><div class="row"><span class="cn">' + x.c.id + '</span><span class="pill ' + st[1] + '">' + st[0] + '</span><span class="sp"></span>' + (order === 'pri' && i < 3 ? '<span class="pill acc">Start here</span>' : '') + '</div><h3>' + esc(x.c.title) + '</h3>' +
+        '<div class="mk"><b>' + x.m + '</b> marks <span class="sub">(' + x.m + '% of exam)</span></div>' +
+        '<div class="sub" style="font-size:.82rem;margin:2px 0 8px">Secured about <b>' + sec.toFixed(1) + '</b>, still to win <b>' + x.gap.toFixed(1) + '</b></div>' +
+        '<div class="mm"><span>Read</span><i><u style="width:' + Math.round(rd * 100) + '%"></u></i><em>' + x.s.read + '/' + x.s.secs + '</em></div>' +
+        '<div class="mm"><span>Seen</span><i><u style="width:' + Math.round(100 * x.s.seen / Math.max(1, x.s.total)) + '%"></u></i><em>' + x.s.seen + '/' + x.s.total + '</em></div>' +
+        '<div class="mm"><span>Accuracy</span><i><u style="width:' + (x.s.acc == null ? 0 : Math.round(x.s.acc * 100)) + '%"></u></i><em>' + (x.s.acc == null ? 'new' : NX.pct(x.s.acc, 0)) + '</em></div></a>';
+    });
     h += '</div>';
     var w = [[1, 5], [6, 10], [11, 15]];
     h += '<h2 style="margin-top:20px">Four week plan</h2><div class="grid g2">';
@@ -51,6 +64,7 @@
     plan.forEach(function (p) { h += '<div class="card"><h3>' + p[0] + '</h3><p class="sub" style="margin:0">' + p[1] + '</p></div>'; });
     h += '</div><h2 style="margin-top:20px">Exam at a glance</h2><div class="card"><ul style="margin:0;padding-left:1.1em"><li>100 marks: 80 MCQs plus 5 case studies of 4 questions (20 marks)</li><li>120 minutes, 25% negative marking, 60% to pass</li><li>Recertification every 3 years</li></ul><p class="sub" style="margin:.6em 0 0">Verify the latest pattern at nism.ac.in before you book.</p></div>';
     V.innerHTML = h;
+    Array.prototype.forEach.call(document.querySelectorAll('#hs button'), function (b) { b.onclick = function () { NX.S.homeSort = b.getAttribute('data-o'); NX.save(); VIEWS.home(); }; });
   };
 
   /* ---------- Learn ---------- */

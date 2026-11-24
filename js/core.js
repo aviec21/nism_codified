@@ -118,3 +118,6 @@ NX.fin = {
   ema: function (a, n) { var k = 2 / (n + 1), out = [], e = null; a.forEach(function (v, i) { e = e == null ? v : v * k + e * (1 - k); out.push(i < n - 1 ? NaN : e); }); return out; },
   rsi: function (a, n) { n = n || 14; var out = a.map(function () { return NaN; }), g = 0, l = 0; for (var i = 1; i < a.length; i++) { var d = a[i] - a[i - 1], up = Math.max(d, 0), dn = Math.max(-d, 0); if (i <= n) { g += up; l += dn; if (i === n) { g /= n; l /= n; out[i] = l === 0 ? 100 : 100 - 100 / (1 + g / l); } } else { g = (g * (n - 1) + up) / n; l = (l * (n - 1) + dn) / n; out[i] = l === 0 ? 100 : 100 - 100 / (1 + g / l); } } return out; }
 };
+
+/* per-chapter colour */
+NX.chColor = function (id) { var hs = [215, 262, 190, 24, 150, 340, 40, 8, 280, 170, 90, 320, 55, 235, 200]; return 'hsl(' + hs[(id - 1) % 15] + ',58%,44%)'; };
